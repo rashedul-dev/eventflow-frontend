@@ -36,7 +36,7 @@ interface Notification {
   title: string;
   message: string;
   status: string;
-  readAt?: string;
+  readAt?: string | null; // Added null here
   createdAt: string;
 }
 
@@ -55,7 +55,10 @@ export function NotificationDropdown() {
       const response = await notificationApi.getAll({ limit: 5 });
       if (response.data) {
         const notificationsData = response.data.notifications || response.data || [];
-        const unread = response.data.unreadCount ?? notificationsData.filter((n: Notification) => !n.readAt).length;
+        // Fixed: Handle null values properly
+        const unread =
+          response.data.unreadCount ??
+          notificationsData.filter((n: Notification) => !n.readAt || n.readAt === null).length;
         setNotifications(notificationsData);
         setUnreadCount(unread);
       }
@@ -73,7 +76,10 @@ export function NotificationDropdown() {
       const response = await notificationApi.getAll({ limit: 10 });
       if (response.data) {
         const notificationsData = response.data.notifications || response.data || [];
-        const unread = response.data.unreadCount ?? notificationsData.filter((n: Notification) => !n.readAt).length;
+        // Fixed: Handle null values properly
+        const unread =
+          response.data.unreadCount ??
+          notificationsData.filter((n: Notification) => !n.readAt || n.readAt === null).length;
         setUnreadCount(unread);
         setHasError(false);
       }
