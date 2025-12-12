@@ -96,10 +96,10 @@ export function SettingsForm() {
     setProfileErrors({});
 
     const result = updateProfileSchema.safeParse({
-      firstName: profileData.firstName || undefined,
-      lastName: profileData.lastName || undefined,
-      phone: profileData.phone || undefined,
-      avatar: profileData.avatar || undefined,
+      firstName: profileData.firstName || "",
+      lastName: profileData.lastName || "",
+      phone: profileData.phone || "",
+      avatar: profileData.avatar || "",
     });
 
     if (!result.success) {
@@ -111,7 +111,23 @@ export function SettingsForm() {
     setProfileLoading(true);
 
     try {
-      await userApi.updateProfile(profileData);
+      // Filter out empty optional fields before sending to API
+      const dataToSend: any = {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+      };
+
+      // Only include phone if it's not empty
+      if (profileData.phone && profileData.phone.trim()) {
+        dataToSend.phone = profileData.phone;
+      }
+
+      // Only include avatar if it's not empty
+      if (profileData.avatar && profileData.avatar.trim()) {
+        dataToSend.avatar = profileData.avatar;
+      }
+
+      await userApi.updateProfile(dataToSend);
       await refreshUser();
       toast({
         title: "Profile updated",
@@ -188,6 +204,14 @@ export function SettingsForm() {
     e.preventDefault();
     setOrganizerErrors({});
 
+    // Check if organizationName is empty
+    if (!organizerData.organizationName || !organizerData.organizationName.trim()) {
+      setOrganizerErrors({
+        organizationName: "Organization name is required",
+      });
+      return;
+    }
+
     const result = updateOrganizerProfileSchema.safeParse({
       organizationName: organizerData.organizationName || undefined,
       organizationDesc: organizerData.organizationDesc || undefined,
@@ -204,7 +228,34 @@ export function SettingsForm() {
     setOrganizerLoading(true);
 
     try {
-      await userApi.updateOrganizerProfile(organizerData);
+      // Filter out empty optional fields before sending to API
+      const dataToSend: any = {
+        organizationName: organizerData.organizationName.trim(),
+      };
+
+      // Only include optional fields if they're not empty
+      if (organizerData.organizationDesc && organizerData.organizationDesc.trim()) {
+        dataToSend.organizationDesc = organizerData.organizationDesc;
+      }
+
+      if (organizerData.website && organizerData.website.trim()) {
+        dataToSend.website = organizerData.website;
+      }
+
+      // Filter out empty social links
+      const socialLinks: any = {};
+      Object.entries(organizerData.socialLinks).forEach(([key, value]) => {
+        if (value && value.trim()) {
+          socialLinks[key] = value;
+        }
+      });
+
+      // Only include socialLinks if at least one link is provided
+      if (Object.keys(socialLinks).length > 0) {
+        dataToSend.socialLinks = socialLinks;
+      }
+
+      await userApi.updateOrganizerProfile(dataToSend);
       await refreshUser();
       toast({
         title: "Organization updated",

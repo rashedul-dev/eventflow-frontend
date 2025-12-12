@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import Loading from "@/app/dashboard/admin/reports/loading";
 
-
 export default function Page() {
   return (
     <Suspense fallback={<div>{<Loading />}</div>}>
@@ -119,7 +118,7 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
       <div className="flex flex-wrap items-center gap-3">
         {/* Category */}
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-45">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -136,7 +135,7 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={cn("w-[180px] justify-start text-left font-normal", !date && "text-muted-foreground")}
+              className={cn("w-45 justify-start text-left font-normal", !date && "text-muted-foreground")}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {date ? format(date, "PPP") : "Pick a date"}

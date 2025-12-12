@@ -10,7 +10,6 @@ import { eventApi } from "@/lib/api";
 import type { Event } from "@/lib/types";
 import Loading from "@/app/dashboard/admin/reports/loading";
 
-
 export default function Page() {
   return (
     <Suspense fallback={<div>{<Loading />}</div>}>

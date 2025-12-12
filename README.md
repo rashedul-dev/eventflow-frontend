@@ -2,6 +2,10 @@
 
 ### A modern, feature-rich event management platform built with Next.js 16, TypeScript, and Tailwind CSS. EventFlow provides a comprehensive solution for event organizers, attendees, and administrators with real-time updates, advanced analytics, and seamless payment processing.
 
+## Demo Video
+
+[Watch the project demo](https://drive.google.com/file/d/17msV-4BVTK-jHoDLgo2IMQPZNQo5n_Ey/view?usp=sharing)
+
 ![EventFlow Banner](public/home-banner.png)
 
 ## 🚀 Features

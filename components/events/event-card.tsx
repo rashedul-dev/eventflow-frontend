@@ -174,11 +174,11 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
                   </span>
                 )}
               </div>
-              <span className="text-sm text-muted-foreground truncate max-w-[120px]">
+              <span className="text-sm text-muted-foreground truncate max-w-30">
                 {event.organizer?.organizationName || `${event.organizer?.firstName} ${event.organizer?.lastName}`}
               </span>
             </div>
-            <div className="text-right">
+            {/* <div className="text-right">
               {lowestPrice === null ? (
                 <span className="text-sm text-muted-foreground">Price TBA</span>
               ) : lowestPrice === 0 ? (
@@ -189,7 +189,8 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
                   <span className="text-lg font-bold text-foreground ml-1">${lowestPrice.toFixed(2)}</span>
                 </>
               )}
-            </div>
+            </div> */}
+            <div className="text-sm text-muted-foreground">More...</div>
           </div>
         </div>
       </div>

@@ -13,8 +13,8 @@ const socialLinksSchema = z
 export const updateProfileSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(100, "First name too long").optional(),
   lastName: z.string().min(1, "Last name is required").max(100, "Last name too long").optional(),
-  phone: z.string().min(10, "Phone must be at least 10 digits").max(20, "Phone too long").optional().or(z.literal("")),
-  avatar: z.string().url("Invalid avatar URL").optional().or(z.literal("")),
+  phone: z.string().max(20, "Phone too long").optional().or(z.literal("")),
+  avatar: z.string().optional().or(z.literal("")),
 });
 
 export const updateOrganizerProfileSchema = z.object({
