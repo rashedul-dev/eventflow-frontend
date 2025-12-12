@@ -1,104 +1,114 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
+import { Suspense } from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Loader2, Lock, Eye, EyeOff, CheckCircle, AlertCircle, CheckCircle2 } from "lucide-react"
-import { useAuth } from "@/lib/auth/auth-context"
-import { cn } from "@/lib/utils"
-import { resetPasswordSchema } from "@/lib/validations"
-import { zodErrorsToRecord, mapApiErrorsToFields } from "@/lib/validations/helpers"
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Lock, Eye, EyeOff, CheckCircle, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { cn } from "@/lib/utils";
+import { resetPasswordSchema } from "@/lib/validations";
+import { zodErrorsToRecord, mapApiErrorsToFields } from "@/lib/validations/helpers";
+import Loading from "@/app/dashboard/admin/reports/loading";
 
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>{<Loading />}</div>}>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
 export function ResetPasswordForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const token = searchParams.get("token")
-  const { resetPassword } = useAuth()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const { resetPassword } = useAuth();
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [generalError, setGeneralError] = useState("")
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [generalError, setGeneralError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
-  })
+  });
 
   const getPasswordStrength = (password: string) => {
-    let strength = 0
-    if (password.length >= 8) strength++
-    if (/[a-z]/.test(password)) strength++
-    if (/[A-Z]/.test(password)) strength++
-    if (/\d/.test(password)) strength++
-    if (/[@$!%*?&]/.test(password)) strength++
-    return strength
-  }
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[@$!%*?&]/.test(password)) strength++;
+    return strength;
+  };
 
-  const passwordStrength = getPasswordStrength(formData.password)
+  const passwordStrength = getPasswordStrength(formData.password);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setGeneralError("")
-    setFieldErrors({})
+    e.preventDefault();
+    setGeneralError("");
+    setFieldErrors({});
 
     // Check passwords match
     if (formData.password !== formData.confirmPassword) {
-      setFieldErrors({ confirmPassword: "Passwords do not match" })
-      return
+      setFieldErrors({ confirmPassword: "Passwords do not match" });
+      return;
     }
 
     if (!token) {
-      setGeneralError("Invalid or missing reset token. Please request a new password reset link.")
-      return
+      setGeneralError("Invalid or missing reset token. Please request a new password reset link.");
+      return;
     }
 
     const result = resetPasswordSchema.safeParse({
       token,
       password: formData.password,
-    })
+    });
 
     if (!result.success) {
-      const errors = zodErrorsToRecord(result.error)
-      setFieldErrors(errors)
-      return
+      const errors = zodErrorsToRecord(result.error);
+      setFieldErrors(errors);
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      await resetPassword(token, formData.password)
-      setIsSuccess(true)
-      setTimeout(() => router.push("/login"), 3000)
+      await resetPassword(token, formData.password);
+      setIsSuccess(true);
+      setTimeout(() => router.push("/login"), 3000);
     } catch (err: any) {
       if (err.errors && Array.isArray(err.errors)) {
-        const mappedErrors = mapApiErrorsToFields(err.errors)
-        setFieldErrors(mappedErrors)
+        const mappedErrors = mapApiErrorsToFields(err.errors);
+        setFieldErrors(mappedErrors);
       } else if (err.message?.includes("token")) {
-        setGeneralError("Reset link has expired or is invalid. Please request a new one.")
+        setGeneralError("Reset link has expired or is invalid. Please request a new one.");
       } else {
-        setGeneralError(err.message || "Failed to reset password. Please try again.")
+        setGeneralError(err.message || "Failed to reset password. Please try again.");
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value })
+    setFormData({ ...formData, [field]: value });
     if (fieldErrors[field]) {
-      const newErrors = { ...fieldErrors }
-      delete newErrors[field]
-      setFieldErrors(newErrors)
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
     }
-    setGeneralError("")
-  }
+    setGeneralError("");
+  };
 
   if (isSuccess) {
     return (
@@ -112,7 +122,7 @@ export function ResetPasswordForm() {
           <Link href="/login">Continue to Login</Link>
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -202,7 +212,7 @@ export function ResetPasswordForm() {
               onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
               className={cn(
                 "pl-10 pr-10",
-                fieldErrors.confirmPassword && "border-destructive focus-visible:ring-destructive",
+                fieldErrors.confirmPassword && "border-destructive focus-visible:ring-destructive"
               )}
               required
             />
@@ -234,5 +244,5 @@ export function ResetPasswordForm() {
         )}
       </Button>
     </form>
-  )
+  );
 }

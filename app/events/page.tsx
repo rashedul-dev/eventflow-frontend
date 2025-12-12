@@ -55,7 +55,9 @@ export default function EventsPage() {
           {/* Filters & Events */}
           <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
-              <EventFilters />
+              <Suspense fallback={<div>Loading filters...</div>}>
+                <EventFilters />
+              </Suspense>
             </div>
 
             <Suspense fallback={<EventListSkeleton />}>

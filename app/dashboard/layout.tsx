@@ -5,6 +5,8 @@ import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
+export const dynamic = "force-dynamic";
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>

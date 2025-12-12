@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { Suspense } from "react";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -10,6 +11,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle, XCircle, Mail, ArrowLeft } from "lucide-react";
 import { authApi } from "@/lib/api";
+import Loading from "@/app/dashboard/admin/reports/loading";
+
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>{<Loading />}</div>}>
+      <VerifyEmailForm />
+    </Suspense>
+  );
+}
 
 export function VerifyEmailForm() {
   const router = useRouter();

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { Suspense } from "react";
+
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,6 +12,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Badge } from "@/components/ui/badge";
 import { Filter, X, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Loading from "@/app/dashboard/admin/reports/loading";
+
 
 export interface FilterOption {
   label: string;
@@ -25,13 +29,21 @@ export interface FilterConfig {
 }
 
 interface FilterPanelProps {
-  filters: FilterConfig[];
+  filters?: FilterConfig[];
   className?: string;
   onFiltersChange?: (filters: Record<string, string>) => void;
   syncWithUrl?: boolean;
 }
 
-export function FilterPanel({ filters, className, onFiltersChange, syncWithUrl = true }: FilterPanelProps) {
+export default function Page() {
+  return (
+    <Suspense fallback={<div>{<Loading />}</div>}>
+      <FilterPanel />
+    </Suspense>
+  );
+}
+
+export function FilterPanel({ filters = [], className, onFiltersChange, syncWithUrl = true }: FilterPanelProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

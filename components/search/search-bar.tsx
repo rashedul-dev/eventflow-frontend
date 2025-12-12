@@ -1,11 +1,21 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Search, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Loading from "@/app/dashboard/admin/reports/loading";
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>{<Loading />}</div>}>
+      <SearchBar />
+    </Suspense>
+  );
+}
 
 interface SearchBarProps {
   placeholder?: string;

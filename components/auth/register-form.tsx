@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { Suspense } from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,6 +14,16 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { cn } from "@/lib/utils";
 import { registerSchema } from "@/lib/validations";
 import { zodErrorsToRecord, mapApiErrorsToFields } from "@/lib/validations/helpers";
+import Loading from "@/app/dashboard/admin/reports/loading";
+
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>{<Loading />}</div>}>
+      <RegisterForm></RegisterForm>
+    </Suspense>
+  );
+}
 
 export function RegisterForm() {
   const router = useRouter();

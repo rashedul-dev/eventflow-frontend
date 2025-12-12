@@ -1,87 +1,95 @@
-"use client"
+"use client";
 
-import type React from "react"
+import { Suspense } from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Loader2, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react"
-import { useAuth } from "@/lib/auth/auth-context"
-import { cn } from "@/lib/utils"
-import { loginSchema } from "@/lib/validations"
-import { zodErrorsToRecord, mapApiErrorsToFields } from "@/lib/validations/helpers"
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Loader2, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { cn } from "@/lib/utils";
+import { loginSchema } from "@/lib/validations";
+import { zodErrorsToRecord, mapApiErrorsToFields } from "@/lib/validations/helpers";
+import Loading from "@/app/dashboard/admin/reports/loading";
 
+export default function Page() {
+  return (
+    <Suspense fallback={<div>{<Loading />}</div>}>
+      <LoginForm></LoginForm>
+    </Suspense>
+  );
+}
 export function LoginForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { login, isLoading: authLoading } = useAuth()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login, isLoading: authLoading } = useAuth();
 
-  const registered = searchParams.get("registered")
-  const verified = searchParams.get("verified")
-  const redirect = searchParams.get("redirect")
+  const registered = searchParams.get("registered");
+  const verified = searchParams.get("verified");
+  const redirect = searchParams.get("redirect");
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [generalError, setGeneralError] = useState("")
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [generalError, setGeneralError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
-  })
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setGeneralError("")
-    setFieldErrors({})
+    e.preventDefault();
+    setGeneralError("");
+    setFieldErrors({});
 
     const result = loginSchema.safeParse({
       email: formData.email,
       password: formData.password,
-    })
+    });
 
     if (!result.success) {
-      const errors = zodErrorsToRecord(result.error)
-      setFieldErrors(errors)
-      return
+      const errors = zodErrorsToRecord(result.error);
+      setFieldErrors(errors);
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      await login(formData.email, formData.password)
-      router.push(redirect || "/dashboard")
+      await login(formData.email, formData.password);
+      router.push(redirect || "/dashboard");
     } catch (err: any) {
       if (err.errors && Array.isArray(err.errors)) {
-        const mappedErrors = mapApiErrorsToFields(err.errors)
-        setFieldErrors(mappedErrors)
+        const mappedErrors = mapApiErrorsToFields(err.errors);
+        setFieldErrors(mappedErrors);
       } else if (err.statusCode === 401) {
-        setGeneralError("Invalid email or password. Please check your credentials and try again.")
+        setGeneralError("Invalid email or password. Please check your credentials and try again.");
       } else if (err.statusCode === 403) {
-        setGeneralError("Your account is suspended. Please contact support.")
+        setGeneralError("Your account is suspended. Please contact support.");
       } else if (err.statusCode === 429) {
-        setGeneralError("Too many login attempts. Please wait a few minutes and try again.")
+        setGeneralError("Too many login attempts. Please wait a few minutes and try again.");
       } else {
-        setGeneralError(err.message || "Failed to sign in. Please try again.")
+        setGeneralError(err.message || "Failed to sign in. Please try again.");
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData({ ...formData, [field]: value })
+    setFormData({ ...formData, [field]: value });
     if (fieldErrors[field]) {
-      const newErrors = { ...fieldErrors }
-      delete newErrors[field]
-      setFieldErrors(newErrors)
+      const newErrors = { ...fieldErrors };
+      delete newErrors[field];
+      setFieldErrors(newErrors);
     }
-    setGeneralError("")
-  }
+    setGeneralError("");
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -244,5 +252,5 @@ export function LoginForm() {
         </Link>
       </p>
     </form>
-  )
+  );
 }

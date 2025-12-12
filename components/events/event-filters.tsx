@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Search, SlidersHorizontal, MapPin, CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import Loading from "@/app/dashboard/admin/reports/loading";
+
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>{<Loading />}</div>}>
+      <EventFilters />
+    </Suspense>
+  );
+}
 
 const categories = [
   "all",

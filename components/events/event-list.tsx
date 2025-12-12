@@ -1,12 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { EventCard } from "./event-card";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
 import { eventApi } from "@/lib/api";
 import type { Event } from "@/lib/types";
+import Loading from "@/app/dashboard/admin/reports/loading";
+
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>{<Loading />}</div>}>
+      <EventList />
+    </Suspense>
+  );
+}
 
 export function EventList() {
   const searchParams = useSearchParams();
