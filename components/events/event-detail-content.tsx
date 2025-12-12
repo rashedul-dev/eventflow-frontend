@@ -39,20 +39,17 @@ export function EventDetailContent({ event }: EventDetailContentProps) {
   }, 0);
 
   const totalTickets = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
-  const isEventEnded = new Date() > new Date(event.endDate);
 
   const now = new Date();
   const isEnded = now > new Date(event.endDate);
-  const isStarted = now >= new Date(event.startDate);
+
+  // We check if it is sold out
   const isSoldOut = event.ticketTypes?.every((t) => t.quantity - t.quantitySold <= 0) || false;
 
-  const canPurchase = !isEnded && !isSoldOut && isStarted;
-
-  /*  map loop (unchanged except you can drop isSoldOut here) */
-  event.ticketTypes?.map((ticket) => {
-    const available = ticket.quantity - ticket.quantitySold;
-    const isAvailable = available > 0; // still tickets left
-  });
+  // --- LOGIC FIX HERE ---
+  // Users can purchase if the event has NOT ended and is NOT sold out.
+  // We removed 'isStarted' because users usually buy tickets *before* the start date.
+  const canPurchase = !isEnded && !isSoldOut;
 
   const handleCheckout = () => {
     if (!isAuthenticated) {
@@ -114,13 +111,13 @@ export function EventDetailContent({ event }: EventDetailContentProps) {
               {event.ticketTypes?.map((ticket) => {
                 const available = ticket.quantity - ticket.quantitySold;
                 const isAvailable = available > 0;
-                const isSoldOut = available <= 0;
+                const isTicketSoldOut = available <= 0;
                 const quantity = selectedTickets[ticket.id] || 0;
 
                 return (
                   <Card
                     key={ticket.id}
-                    className={cn("transition-all", quantity > 0 && "border-primary", isSoldOut && "opacity-60")}
+                    className={cn("transition-all", quantity > 0 && "border-primary", isTicketSoldOut && "opacity-60")}
                   >
                     <CardContent className="p-6">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -128,7 +125,7 @@ export function EventDetailContent({ event }: EventDetailContentProps) {
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-semibold text-lg">{ticket.name}</h3>
                             {ticket.category === "FREE" && <Badge className="bg-primary">Free</Badge>}
-                            {isSoldOut && <Badge variant="destructive">Sold Out</Badge>}
+                            {isTicketSoldOut && <Badge variant="destructive">Sold Out</Badge>}
                           </div>
                           {ticket.description && (
                             <p className="text-sm text-muted-foreground mb-2">{ticket.description}</p>
@@ -195,7 +192,7 @@ export function EventDetailContent({ event }: EventDetailContentProps) {
                       className="w-full glow-primary"
                       size="lg"
                       onClick={handleCheckout}
-                      disabled={!canPurchase} // block when ended/sold-out/not-started
+                      disabled={!canPurchase} // Now works correctly
                     >
                       <Ticket className="w-5 h-5 mr-2" />
                       {!isAuthenticated
