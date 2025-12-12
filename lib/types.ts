@@ -81,6 +81,10 @@ export interface Event {
   ticketTypes?: TicketType[];
   createdAt: string;
   updatedAt: string;
+  _count?: {
+    tickets: number;
+    ticketType: number;
+  };
 }
 export interface CreateEventResponse {
   id: string;

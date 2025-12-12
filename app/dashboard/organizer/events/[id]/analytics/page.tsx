@@ -182,7 +182,7 @@ export default function EventAnalyticsPage({ params }: { params: Promise<{ id: s
                 <span className="font-bold text-foreground">${formatLargeNumber(revenue)}</span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-lg bg-background/50">
-                <span className="text-muted-foreground">Platform Fee (10%)</span>
+                <span className="text-muted-foreground">Platform Fee (5%)</span>
                 <span className="font-bold text-muted-foreground">
                   -${formatLargeNumber(safeNumber(revenue * 0.1))}
                 </span>

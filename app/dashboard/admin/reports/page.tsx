@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { analyticsApi } from "@/lib/api";
+import { CommissionReportsResponse } from "@/lib/interface";
 
 const PLATFORM_FEE_RATE = 0.05; // 5%
 
@@ -42,36 +43,23 @@ const safeNumber = (val: any): number => {
 interface OrganizerReport {
   organizerId: string;
   organizerName: string;
-  organizerEmail?: string;
-  totalSales: number;
-  commissionOwed: number;
+  totalRevenue: number;
+  totalCommission: number;
+  totalPayout: number;
   eventCount: number;
-  events: Array<{
+  events?: Array<{
     eventId: string;
     eventTitle: string;
-    eventRevenue: number;
+    revenue: number;
     commission: number;
-    ticketsSold: number;
+    payout: number;
+    ticketsSold?: number;
   }>;
-}
-
-interface CommissionData {
-  summary: {
-    totalCommission: number;
-    totalPaid: number;
-    totalUnpaid: number;
-    totalGrossSales: number;
-    totalOrganizerPayout: number;
-    totalOrganizers: number;
-    totalEvents: number;
-    totalTickets: number;
-  };
-  reports: OrganizerReport[];
 }
 
 export default function CommissionReportsPage() {
   const { toast } = useToast();
-  const [data, setData] = useState<CommissionData | null>(null);
+  const [data, setData] = useState<CommissionReportsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState("all");
@@ -86,8 +74,7 @@ export default function CommissionReportsPage() {
     setError(null);
 
     try {
-      // Build query params based on period
-      const params: any = {};
+      let query: any = undefined;
       if (selectedPeriod !== "all") {
         const now = new Date();
         const dateFrom = new Date();
@@ -106,56 +93,17 @@ export default function CommissionReportsPage() {
             dateFrom.setFullYear(now.getFullYear() - 1);
             break;
         }
-        params.dateFrom = dateFrom.toISOString();
-        params.dateTo = now.toISOString();
+        query = {
+          dateFrom: dateFrom.toISOString(),
+          dateTo: now.toISOString(),
+        };
       }
 
-      const res = await analyticsApi.getCommissionReports(params);
-      const apiData = res.data;
+      const res = await analyticsApi.getCommissionReports(query);
 
-      if (!apiData) {
-        throw new Error("No data returned from API");
-      }
-
-      // Map the API response correctly
-      const reports: OrganizerReport[] = (apiData.reports || []).map((r: any) => ({
-        organizerId: r.organizerId,
-        organizerName: r.organizerName || r.organizerId,
-        organizerEmail: r.organizerEmail,
-        totalSales: safeNumber(r.totalSales),
-        commissionOwed: safeNumber(r.commissionOwed),
-        eventCount: safeNumber(r.eventCount),
-        events: (r.events || []).map((e: any) => ({
-          eventId: e.eventId,
-          eventTitle: e.eventTitle,
-          eventRevenue: safeNumber(e.eventRevenue),
-          commission: safeNumber(e.commission),
-          ticketsSold: safeNumber(e.ticketsSold),
-        })),
-      }));
-
-      // Calculate totals from reports data
-      const totalGrossSales = reports.reduce((sum, r) => sum + r.totalSales, 0);
-      const totalCommission = reports.reduce((sum, r) => sum + r.commissionOwed, 0);
-      const totalOrganizerPayout = totalGrossSales - totalCommission;
-      const totalEvents = reports.reduce((sum, r) => sum + r.eventCount, 0);
-      const totalTickets = reports.reduce((sum, r) => sum + r.events.reduce((eSum, e) => eSum + e.ticketsSold, 0), 0);
-
-      setData({
-        summary: {
-          totalCommission: apiData.summary?.totalCommission || totalCommission,
-          totalPaid: safeNumber(apiData.summary?.totalPaid),
-          totalUnpaid: safeNumber(apiData.summary?.totalUnpaid),
-          totalGrossSales,
-          totalOrganizerPayout,
-          totalOrganizers: reports.length,
-          totalEvents,
-          totalTickets,
-        },
-        reports,
-      });
+      setData(res.data || null);
     } catch (err: any) {
-      console.error("Failed to load commission report:", err);
+      console.error(" Failed to load commission report:", err);
       setError(err.message || "Failed to load commission report");
       toast({
         title: "Error",
@@ -170,12 +118,9 @@ export default function CommissionReportsPage() {
   const handleExport = () => {
     if (!data) return;
 
-    // Create CSV content
-    let csv = "Organizer,Email,Events,Gross Sales,Commission (5%),Payout\n";
-    data.reports.forEach((r) => {
-      csv += `"${r.organizerName}","${r.organizerEmail || ""}",${r.eventCount},${r.totalSales},${r.commissionOwed},${
-        r.totalSales - r.commissionOwed
-      }\n`;
+    let csv = "Organizer,Events,Gross Sales,Commission (5%),Payout\n";
+    data.byOrganizer.forEach((r) => {
+      csv += `"${r.organizerName}",${r.eventCount},${r.totalRevenue},${r.totalCommission},${r.totalPayout}\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -203,15 +148,15 @@ export default function CommissionReportsPage() {
   }
 
   const summary = data?.summary || {
+    totalRevenue: 0,
     totalCommission: 0,
-    totalPaid: 0,
-    totalUnpaid: 0,
-    totalGrossSales: 0,
-    totalOrganizerPayout: 0,
-    totalOrganizers: 0,
-    totalEvents: 0,
-    totalTickets: 0,
+    totalPayout: 0,
+    transactionCount: 0,
   };
+
+  const totalOrganizers = data?.byOrganizer.length || 0;
+  const totalEvents = data?.byOrganizer.reduce((sum, org) => sum + safeNumber(org.eventCount), 0) || 0;
+  const totalTickets = data?.byEvent.reduce((sum, event) => sum + safeNumber(event.transactionCount), 0) || 0;
 
   return (
     <div className="space-y-6 p-6">
@@ -241,7 +186,7 @@ export default function CommissionReportsPage() {
               <span className="text-sm text-muted-foreground">Time Period:</span>
             </div>
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-45">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
@@ -279,7 +224,7 @@ export default function CommissionReportsPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 rounded-lg bg-background/50 text-center">
-              <p className="text-3xl font-bold text-foreground">{formatCurrency(summary.totalGrossSales)}</p>
+              <p className="text-3xl font-bold text-foreground">{formatCurrency(summary.totalRevenue)}</p>
               <p className="text-sm text-muted-foreground mt-1">Gross Sales</p>
             </div>
             <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 text-center">
@@ -287,21 +232,21 @@ export default function CommissionReportsPage() {
               <p className="text-sm text-muted-foreground mt-1">Platform Commission (5%)</p>
             </div>
             <div className="p-4 rounded-lg bg-background/50 text-center">
-              <p className="text-3xl font-bold text-foreground">{formatCurrency(summary.totalOrganizerPayout)}</p>
+              <p className="text-3xl font-bold text-foreground">{formatCurrency(summary.totalPayout)}</p>
               <p className="text-sm text-muted-foreground mt-1">Organizer Payouts (95%)</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Commission Status */}
+      {/* Commission Status - Using actual commission data */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="border-l-4 border-l-green-500 bg-secondary/30 border-foreground/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Commission Paid</p>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(summary.totalPaid)}</p>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(0)}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-green-500" />
             </div>
@@ -312,7 +257,7 @@ export default function CommissionReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Commission Pending</p>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(summary.totalUnpaid)}</p>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(summary.totalCommission)}</p>
               </div>
               <Clock className="h-8 w-8 text-amber-500" />
             </div>
@@ -327,7 +272,7 @@ export default function CommissionReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Organizers</p>
-                <p className="text-2xl font-bold text-foreground">{summary.totalOrganizers}</p>
+                <p className="text-2xl font-bold text-foreground">{totalOrganizers}</p>
               </div>
               <Users className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -338,7 +283,7 @@ export default function CommissionReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Events</p>
-                <p className="text-2xl font-bold text-foreground">{summary.totalEvents}</p>
+                <p className="text-2xl font-bold text-foreground">{totalEvents}</p>
               </div>
               <Calendar className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -349,7 +294,7 @@ export default function CommissionReportsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Tickets Sold</p>
-                <p className="text-2xl font-bold text-foreground">{summary.totalTickets}</p>
+                <p className="text-2xl font-bold text-foreground">{totalTickets}</p>
               </div>
               <Ticket className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -361,7 +306,7 @@ export default function CommissionReportsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Avg per Ticket</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {summary.totalTickets > 0 ? formatCurrency(summary.totalGrossSales / summary.totalTickets) : "$0.00"}
+                  {totalTickets > 0 ? formatCurrency(summary.totalRevenue / totalTickets) : "$0.00"}
                 </p>
               </div>
               <TrendingUp className="h-6 w-6 text-muted-foreground" />
@@ -380,85 +325,89 @@ export default function CommissionReportsPage() {
           <CardDescription>Click on an organizer to view event details</CardDescription>
         </CardHeader>
         <CardContent>
-          {data?.reports && data.reports.length > 0 ? (
+          {data?.byOrganizer && data.byOrganizer.length > 0 ? (
             <div className="space-y-2">
-              {data.reports.map((org) => (
-                <div key={org.organizerId} className="border border-border rounded-lg overflow-hidden">
-                  {/* Organizer Row */}
-                  <button
-                    onClick={() => setExpandedOrganizer(expandedOrganizer === org.organizerId ? null : org.organizerId)}
-                    className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-medium text-foreground">{org.organizerName}</p>
-                        <p className="text-sm text-muted-foreground">{org.eventCount} events</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-sm text-muted-foreground">Gross Sales</p>
-                        <p className="font-medium text-foreground">{formatCurrency(org.totalSales)}</p>
-                      </div>
-                      <div className="text-right hidden md:block">
-                        <p className="text-sm text-muted-foreground">Commission</p>
-                        <p className="font-medium text-primary">{formatCurrency(org.commissionOwed)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Payout</p>
-                        <p className="font-medium text-foreground">
-                          {formatCurrency(org.totalSales - org.commissionOwed)}
-                        </p>
-                      </div>
-                      <ChevronRight
-                        className={`w-5 h-5 text-muted-foreground transition-transform ${
-                          expandedOrganizer === org.organizerId ? "rotate-90" : ""
-                        }`}
-                      />
-                    </div>
-                  </button>
+              {data.byOrganizer.map((org) => {
+                const organizerEvents = data.byEvent.filter((e) => e.organizerName === org.organizerName);
 
-                  {/* Expanded Events */}
-                  {expandedOrganizer === org.organizerId && org.events.length > 0 && (
-                    <div className="border-t border-border bg-muted/30">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-border hover:bg-transparent">
-                            <TableHead className="text-foreground">Event</TableHead>
-                            <TableHead className="text-foreground">Tickets</TableHead>
-                            <TableHead className="text-foreground">Revenue</TableHead>
-                            <TableHead className="text-foreground">Commission</TableHead>
-                            <TableHead className="text-right text-foreground">Payout</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {org.events.map((event) => (
-                            <TableRow key={event.eventId} className="border-border">
-                              <TableCell className="font-medium text-foreground">{event.eventTitle}</TableCell>
-                              <TableCell className="text-foreground">{event.ticketsSold}</TableCell>
-                              <TableCell className="text-foreground">{formatCurrency(event.eventRevenue)}</TableCell>
-                              <TableCell className="text-primary">{formatCurrency(event.commission)}</TableCell>
-                              <TableCell className="text-right text-foreground">
-                                {formatCurrency(event.eventRevenue - event.commission)}
-                              </TableCell>
+                return (
+                  <div key={org.organizerId} className="border border-border rounded-lg overflow-hidden">
+                    {/* Organizer Row */}
+                    <button
+                      onClick={() =>
+                        setExpandedOrganizer(expandedOrganizer === org.organizerId ? null : org.organizerId)
+                      }
+                      className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-medium text-foreground">{org.organizerName}</p>
+                          <p className="text-sm text-muted-foreground">{org.eventCount} events</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right hidden sm:block">
+                          <p className="text-sm text-muted-foreground">Gross Sales</p>
+                          <p className="font-medium text-foreground">{formatCurrency(org.totalRevenue)}</p>
+                        </div>
+                        <div className="text-right hidden md:block">
+                          <p className="text-sm text-muted-foreground">Commission</p>
+                          <p className="font-medium text-primary">{formatCurrency(org.totalCommission)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Payout</p>
+                          <p className="font-medium text-foreground">{formatCurrency(org.totalPayout)}</p>
+                        </div>
+                        <ChevronRight
+                          className={`w-5 h-5 text-muted-foreground transition-transform ${
+                            expandedOrganizer === org.organizerId ? "rotate-90" : ""
+                          }`}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Expanded Events */}
+                    {expandedOrganizer === org.organizerId && organizerEvents.length > 0 && (
+                      <div className="border-t border-border bg-muted/30">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-border hover:bg-transparent">
+                              <TableHead className="text-foreground">Event</TableHead>
+                              <TableHead className="text-foreground">Tickets</TableHead>
+                              <TableHead className="text-foreground">Revenue</TableHead>
+                              <TableHead className="text-foreground">Commission</TableHead>
+                              <TableHead className="text-right text-foreground">Payout</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
+                          </TableHeader>
+                          <TableBody>
+                            {organizerEvents.map((event) => (
+                              <TableRow key={event.eventId} className="border-border">
+                                <TableCell className="font-medium text-foreground">{event.eventTitle}</TableCell>
+                                <TableCell className="text-foreground">{event.transactionCount}</TableCell>
+                                <TableCell className="text-foreground">{formatCurrency(event.revenue)}</TableCell>
+                                <TableCell className="text-primary">{formatCurrency(event.commission)}</TableCell>
+                                <TableCell className="text-right text-foreground">
+                                  {formatCurrency(event.payout)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
 
-                  {/* No events message */}
-                  {expandedOrganizer === org.organizerId && org.events.length === 0 && (
-                    <div className="border-t border-border bg-muted/30 p-4 text-center text-muted-foreground">
-                      No event details available
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {/* No events message */}
+                    {expandedOrganizer === org.organizerId && organizerEvents.length === 0 && (
+                      <div className="border-t border-border bg-muted/30 p-4 text-center text-muted-foreground">
+                        No event details available
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">

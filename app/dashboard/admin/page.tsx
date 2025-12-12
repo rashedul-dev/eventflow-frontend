@@ -5,14 +5,14 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { adminApi } from "@/lib/api";
 import { Shield, Users, Calendar, DollarSign, Loader2, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { adminApi } from "@/lib/api";
 
 // Helper to safely convert BigInt values
 const safeNumber = (val: any): number => {
   if (typeof val === "bigint") return Number(val);
-  if (typeof val === "string") return parseFloat(val) || 0;
+  if (typeof val === "string") return Number.parseFloat(val) || 0;
   return val || 0;
 };
 
@@ -30,13 +30,25 @@ export default function AdminDashboardPage() {
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const [analyticsRes, userStatsRes, pendingRes, verifyStatsRes] = await Promise.all([
-        adminApi.getPlatformAnalytics().catch(err => ({ data: null })),
-        adminApi.getUserStatistics().catch(err => ({ data: null })),
-        adminApi.getPendingEvents().catch(err => ({ data: [] })),
-        adminApi.getVerificationStats().catch(err => ({ data: null })),
+        adminApi.getPlatformAnalytics().catch((err: any) => {
+          console.error("Analytics API error:", err);
+          return { data: null };
+        }),
+        adminApi.getUserStatistics().catch((err: any) => {
+          console.error("User stats API error:", err);
+          return { data: null };
+        }),
+        adminApi.getPendingEvents().catch((err: any) => {
+          console.error("Pending events API error:", err);
+          return { data: [] };
+        }),
+        adminApi.getVerificationStats().catch((err: any) => {
+          console.error("Verification stats API error:", err);
+          return { data: null };
+        }),
       ]);
 
       setStats({
@@ -47,19 +59,19 @@ export default function AdminDashboardPage() {
         totalCommission: safeNumber(analyticsRes.data?.overview?.totalCommission),
         activeEvents: safeNumber(analyticsRes.data?.overview?.activeEvents),
         pendingEvents: safeNumber(analyticsRes.data?.overview?.pendingEvents),
-        
+
         // User stats
-        organizerCount: userStatsRes.data?.byRole?.find((r: any) => r.role === "ORGANIZER")?._count || 0,
-        attendeeCount: userStatsRes.data?.byRole?.find((r: any) => r.role === "ATTENDEE")?._count || 0,
+        organizerCount: safeNumber(userStatsRes.data?.byRole?.find((r: any) => r.role === "ORGANIZER")?.count) || 0,
+        attendeeCount: safeNumber(userStatsRes.data?.byRole?.find((r: any) => r.role === "ATTENDEE")?.count) || 0,
         verifiedUsers: safeNumber(userStatsRes.data?.overview?.verified),
-        
+
         // Verification stats
         pendingCount: safeNumber(verifyStatsRes.data?.counts?.pending),
         approvedCount: safeNumber(verifyStatsRes.data?.counts?.approved),
         rejectedCount: safeNumber(verifyStatsRes.data?.counts?.rejected),
         approvalRate: safeNumber(verifyStatsRes.data?.percentages?.approvalRate),
       });
-      
+
       setPendingEvents(pendingRes.data || []);
     } catch (err: any) {
       console.error("Failed to load admin data:", err);
@@ -276,14 +288,12 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-muted-foreground">Pending</p>
           </div>
           <div className="p-4 rounded-lg bg-background/50 text-center">
-            <p className="text-2xl font-bold text-primary">
-              {stats?.approvalRate ? `${stats.approvalRate}%` : "N/A"}
-            </p>
+            <p className="text-2xl font-bold text-primary">{stats?.approvalRate ? `${stats.approvalRate}%` : "N/A"}</p>
             <p className="text-sm text-muted-foreground">Approval Rate</p>
           </div>
         </div>
       </Card>
-      
+
       {/* Commission Overview */}
       <Card className="bg-secondary/30 border-foreground/10 p-6">
         <div className="flex items-center justify-between mb-4">
@@ -303,7 +313,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="p-4 rounded-lg bg-background/50">
             <p className="text-sm text-muted-foreground mb-1">Commission Rate</p>
-            <p className="text-2xl font-bold text-foreground">10%</p>
+            <p className="text-2xl font-bold text-foreground">5%</p>
           </div>
         </div>
       </Card>

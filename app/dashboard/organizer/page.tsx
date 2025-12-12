@@ -48,43 +48,75 @@ export default function OrganizerDashboardPage() {
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      const [eventsRes, analyticsRes] = await Promise.all([eventApi.getMyEvents(), analyticsApi.getOrganizer()]);
+      const [eventsRes, analyticsRes] = await Promise.all([
+        eventApi.getMyEvents().catch(() => ({ data: [] })),
+        analyticsApi.getOrganizer().catch(() => ({ data: null })),
+      ]);
 
-      const events = eventsRes.data || [];
-      const analytics = analyticsRes.data || {};
+      console.log(" Events response:", eventsRes);
+      console.log(" Analytics response:", analyticsRes);
+
+      const events = eventsRes?.data || [];
+      const analytics = analyticsRes?.data || {};
 
       const now = new Date();
       const upcomingEvents = events.filter((e: any) => new Date(e.startDate) > now);
       const pendingEvents = events.filter((e: any) => e.status === "PENDING_APPROVAL");
 
-      // Get recent sales from first event with tickets
-      let recentSales: any[] = [];
-      for (const event of events.slice(0, 3)) {
-        try {
-          const ticketsRes = await ticketApi.getEventTickets(event.id, { limit: 5 });
-          if (ticketsRes.data && ticketsRes.data.length > 0) {
-            recentSales = [...recentSales, ...ticketsRes.data.map((t: any) => ({ ...t, event }))];
+      let totalRevenue = 0;
+      let totalTicketsSold = 0;
+      const recentSales: any[] = [];
+
+      // If analytics endpoint returns data, use it
+      if (analytics.totalRevenue !== undefined) {
+        totalRevenue = Number(analytics.totalRevenue) || 0;
+        totalTicketsSold = Number(analytics.ticketsSold) || 0;
+      } else {
+        // Otherwise calculate from events
+        for (const event of events) {
+          try {
+            const ticketsRes = await ticketApi.getEventTickets(event.id, { limit: 100 });
+            const tickets = ticketsRes?.data || [];
+
+            // Calculate revenue and count tickets
+            for (const ticket of tickets) {
+              if (ticket.status === "ACTIVE" || ticket.status === "USED") {
+                totalRevenue += Number(ticket.pricePaid) || 0;
+                totalTicketsSold += 1;
+
+                // Add to recent sales
+                if (recentSales.length < 5) {
+                  recentSales.push({
+                    ...ticket,
+                    event,
+                  });
+                }
+              }
+            }
+          } catch (err) {
+            console.error(` Failed to fetch tickets for event ${event.id}:`, err);
           }
-        } catch {
-          // Continue if no access to tickets
         }
       }
+
+      console.log(" Calculated revenue:", totalRevenue);
+      console.log(" Calculated tickets sold:", totalTicketsSold);
 
       setData({
         events: events.slice(0, 5),
         analytics,
-        recentSales: recentSales.slice(0, 5),
+        recentSales: analytics.recentSales || recentSales.slice(0, 5),
         stats: {
           totalEvents: events.length,
-          totalAttendees: analytics.totalAttendees || 0,
-          totalRevenue: analytics.totalRevenue || 0,
-          ticketsSold: analytics.ticketsSold || 0,
+          totalAttendees: Number(analytics.totalAttendees) || 0,
+          totalRevenue,
+          ticketsSold: totalTicketsSold,
           pendingApproval: pendingEvents.length,
           upcomingEvents: upcomingEvents.length,
         },
       });
     } catch (err) {
-      console.error("Failed to load dashboard:", err);
+      console.error(" Failed to load dashboard:", err);
       setData({
         events: [],
         analytics: {},
@@ -168,9 +200,7 @@ export default function OrganizerDashboardPage() {
                 <Users className="h-5 w-5 text-blue-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {(data?.stats.totalAttendees || 0).toLocaleString()}
-                </p>
+                <p className="text-2xl font-bold text-foreground">{data?.stats.totalAttendees || 0}</p>
                 <p className="text-xs text-muted-foreground">Attendees</p>
               </div>
             </div>
@@ -184,9 +214,7 @@ export default function OrganizerDashboardPage() {
                 <DollarSign className="h-5 w-5 text-green-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">
-                  ${(data?.stats.totalRevenue || 0).toLocaleString()}
-                </p>
+                <p className="text-2xl font-bold text-foreground">${(data?.stats.totalRevenue || 0).toFixed(2)}</p>
                 <p className="text-xs text-muted-foreground">Revenue</p>
               </div>
             </div>
@@ -200,7 +228,7 @@ export default function OrganizerDashboardPage() {
                 <Ticket className="h-5 w-5 text-purple-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{(data?.stats.ticketsSold || 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-foreground">{data?.stats.ticketsSold || 0}</p>
                 <p className="text-xs text-muted-foreground">Tickets Sold</p>
               </div>
             </div>

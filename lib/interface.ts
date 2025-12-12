@@ -49,13 +49,35 @@ export interface OrganizerAnalyticsResponse {
 }
 
 export interface AdminAnalyticsResponse {
-  totalRevenue: number;
-  ticketsSold: number;
-  activeEvents: number;
-  totalUsers: number;
-  platformCommission: number;
-  revenueData: Array<{ date: string; revenue: number }>;
-  topEvents: Array<{ id: string; title: string; revenue: number; ticketsSold: number }>;
+  overview: {
+    totalUsers: number;
+    totalEvents: number;
+    totalRevenue: number;
+    totalCommission: number;
+    activeEvents: number;
+    pendingEvents: number;
+  };
+  userGrowth: Array<{
+    date: Date;
+    newUsers: number;
+    totalUsers: number;
+  }>;
+  revenueByPeriod: Array<{
+    date: string;
+    revenue: number;
+  }>;
+  topEvents: Array<{
+    eventId: string;
+    eventTitle: string;
+    revenue: number;
+    ticketsSold: number;
+  }>;
+  topOrganizers: Array<{
+    organizerId: string;
+    organizerName: string;
+    totalRevenue: number;
+    eventCount: number;
+  }>;
 }
 
 export interface EventAnalyticsResponse {
@@ -69,24 +91,26 @@ export interface EventAnalyticsResponse {
 
 export interface CommissionReportsResponse {
   summary: {
+    totalRevenue: number;
     totalCommission: number;
-    totalPaid: number;
-    totalUnpaid: number;
-    totalOrganizers: number;
+    totalPayout: number;
+    transactionCount: number;
   };
-  reports: Array<{
+  byEvent: Array<{
+    eventId: string;
+    eventTitle: string;
+    organizerName: string;
+    revenue: number;
+    commission: number;
+    payout: number;
+    transactionCount: number;
+  }>;
+  byOrganizer: Array<{
     organizerId: string;
     organizerName: string;
-    totalSales: number;
-    commissionOwed: number;
+    totalRevenue: number;
+    totalCommission: number;
+    totalPayout: number;
     eventCount: number;
-    events: Array<{
-      eventId: string;
-      eventTitle: string;
-      eventRevenue: number;
-      commission: number;
-      ticketsSold: number;
-    }>;
   }>;
-  monthlyBreakdown: Array<{ month: string; commission: number }>;
 }

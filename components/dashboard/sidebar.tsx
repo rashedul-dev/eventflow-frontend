@@ -48,7 +48,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/admin/events", label: "Event Verification", icon: FileCheck },
     { href: "/dashboard/admin/users", label: "User Management", icon: UserCog },
     { href: "/dashboard/admin/analytics", label: "Platform Analytics", icon: PieChart },
-    { href: "/dashboard/admin/reports", label: "Commission Reports", icon: FileText },
+    // { href: "/dashboard/admin/reports", label: "Commission Reports", icon: FileText },
   ];
 
   const canViewOrganizerSection = user && ["ORGANIZER", "ADMIN", "SUPER_ADMIN"].includes(user.role);

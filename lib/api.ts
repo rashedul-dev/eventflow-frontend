@@ -583,33 +583,54 @@ export const analyticsApi = {
       },
     }).then((res) => res.json());
   },
-  // GET /analytics/admin/overview - matches backend route
+  // // GET /analytics/admin/overview - matches backend route
+  // getAdminAnalytics: (query?: IAnalyticsQuery) => {
+  //   const searchParams = new URLSearchParams();
+  //   if (query) {
+  //     Object.entries(query).forEach(([key, value]) => {
+  //       if (value !== undefined) searchParams.append(key, String(value));
+  //     });
+  //   }
+  //   const queryString = searchParams.toString();
+  //   return fetchApi<AdminAnalyticsResponse>(`/analytics/admin/overview${queryString ? `?${queryString}` : ""}`);
+  // },
+  // // GET /analytics/commission-reports - matches backend route
+  // getCommissionReports: (params?: {
+  //   organizerId?: string;
+  //   month?: string;
+  //   status?: string;
+  //   dateFrom?: string;
+  //   dateTo?: string;
+  // }) => {
+  //   const searchParams = new URLSearchParams();
+  //   if (params) {
+  //     Object.entries(params).forEach(([key, value]) => {
+  //       if (value !== undefined) searchParams.append(key, String(value));
+  //     });
+  //   }
+  //   const queryString = searchParams.toString();
+  //   return fetchApi<CommissionReportsResponse>(`/analytics/commission-reports${queryString ? `?${queryString}` : ""}`);
+  // },
+
   getAdminAnalytics: (query?: IAnalyticsQuery) => {
-    const searchParams = new URLSearchParams();
-    if (query) {
-      Object.entries(query).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.append(key, String(value));
-      });
-    }
-    const queryString = searchParams.toString();
-    return fetchApi<AdminAnalyticsResponse>(`/analytics/admin/overview${queryString ? `?${queryString}` : ""}`);
+    const params = new URLSearchParams();
+    if (query?.period) params.append("period", query.period);
+    if (query?.dateFrom) params.append("dateFrom", query.dateFrom);
+    if (query?.dateTo) params.append("dateTo", query.dateTo);
+
+    const queryString = params.toString();
+    return fetchApi<AdminAnalyticsResponse>(`/admin/analytics${queryString ? `?${queryString}` : ""}`);
   },
-  // GET /analytics/commission-reports - matches backend route
-  getCommissionReports: (params?: {
-    organizerId?: string;
-    month?: string;
-    status?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }) => {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) searchParams.append(key, String(value));
-      });
-    }
-    const queryString = searchParams.toString();
-    return fetchApi<CommissionReportsResponse>(`/analytics/commission-reports${queryString ? `?${queryString}` : ""}`);
+
+  // getCommissionReports: () => fetchApi<CommissionReportsResponse>("/admin/reports/commission"),
+  getCommissionReports: (query?: IAnalyticsQuery) => {
+    const params = new URLSearchParams();
+    if (query?.period) params.append("period", query.period);
+    if (query?.dateFrom) params.append("dateFrom", query.dateFrom);
+    if (query?.dateTo) params.append("dateTo", query.dateTo);
+
+    const queryString = params.toString();
+    return fetchApi<CommissionReportsResponse>(`/admin/reports/commission${queryString ? `?${queryString}` : ""}`);
   },
 
   // Organizer analytics - uses Next.js route
@@ -774,7 +795,7 @@ export const adminApi = {
         if (value !== undefined) searchParams.append(key, String(value));
       });
     }
-    return fetchApi<any>(`/analytics/platform?${searchParams.toString()}`);
+    return fetchApi<any>(`/admin/analytics?${searchParams.toString()}`);
   },
 
   getCommissionReport: (params?: { dateFrom?: string; dateTo?: string; organizerId?: string; eventId?: string }) => {

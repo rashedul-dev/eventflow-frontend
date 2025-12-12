@@ -48,8 +48,8 @@ export function EventCardDashboard({ event, onDelete, onCancel, onSubmit, onClon
   const [isLoading, setIsLoading] = useState(false);
 
   // Calculate ticket stats
-  const totalTickets = event.ticketTypes?.reduce((sum, t) => sum + t.quantity, 0) || 0;
-  const soldTickets = event.ticketTypes?.reduce((sum, t) => sum + t.quantitySold, 0) || 0;
+  const totalTickets = event.capacity || 0;
+  const soldTickets = event?._count?.tickets || 0;
   const soldPercentage = totalTickets > 0 ? (soldTickets / totalTickets) * 100 : 0;
 
   const getStatusColor = (status: EventStatus) => {
@@ -155,7 +155,7 @@ export function EventCardDashboard({ event, onDelete, onCancel, onSubmit, onClon
         description: "The event has been cloned successfully. Redirecting to edit...",
       });
       setCloneDialog(false);
-      
+
       // Refresh the list or redirect to the new event
       if (onClone) {
         onClone();
@@ -253,23 +253,26 @@ export function EventCardDashboard({ event, onDelete, onCancel, onSubmit, onClon
               </div>
 
               {/* Stats row */}
+
               <div className="flex items-center justify-between pt-3 border-t border-foreground/10">
                 <div className="flex items-center gap-4">
                   {/* Tickets progress */}
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-foreground/40" />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">
-                        {soldTickets} / {totalTickets}
-                      </span>
-                      <div className="w-20 h-1.5 rounded-full bg-foreground/10 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all duration-500"
-                          style={{ width: `${soldPercentage}%` }}
-                        />
+                  {totalTickets > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-foreground/40" />
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-foreground">
+                          {soldTickets} / {totalTickets}
+                        </span>
+                        <div className="w-20 h-1.5 rounded-full bg-foreground/10 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all duration-500"
+                            style={{ width: `${(soldTickets / totalTickets) * 100}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <Button variant="outline" size="sm" asChild>

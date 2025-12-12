@@ -68,7 +68,7 @@ export function EventDetailHero({ event }: EventDetailHeroProps) {
   return (
     <section className="relative">
       {/* Cover Image */}
-      <div className="relative h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden">
+      <div className="relative h-75 md:h-100 lg:h-125 overflow-hidden">
         <img
           src={event.coverImage || "/placeholder.svg?height=500&width=1200&query=event banner"}
           alt={event.title}
