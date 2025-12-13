@@ -28,6 +28,7 @@ import {
   Plus,
   Home,
 } from "lucide-react";
+import Image from "next/image";
 
 export function DashboardHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -66,8 +67,8 @@ export function DashboardHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-primary-foreground" />
+            <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
+              <img src="/favicon.svg" alt="logo" />
             </div>
             <span className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
               <p>EventFlow</p>

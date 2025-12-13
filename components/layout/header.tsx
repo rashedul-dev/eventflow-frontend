@@ -27,6 +27,7 @@ import {
   Plus,
   LogOutIcon,
 } from "lucide-react";
+import Image from "next/image";
 
 const navigation = [
   { name: "Discover", href: "/events" },
@@ -75,14 +76,13 @@ export function Header() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-primary-foreground" />
+            <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
+              <img src="/favicon.svg" alt="logo" />
             </div>
             <span className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
               EventFlow
             </span>
           </Link>
-
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-8">
             {navigation.map((item) => (
@@ -98,7 +98,6 @@ export function Header() {
               </Link>
             ))}
           </div>
-
           {/* Desktop Auth */}
           <div className="hidden lg:flex items-center gap-4">
             {isLoggedIn ? (
@@ -159,7 +158,6 @@ export function Header() {
               </>
             )}
           </div>
-
           {/* Mobile Menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild className="lg:hidden">

@@ -28,9 +28,15 @@ export const metadata: Metadata = {
   keywords: ["events", "tickets", "event management", "concerts", "conferences", "festivals"],
   authors: [{ name: "EventFlow" }],
   creator: "EventFlow",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
+    url: "https://eventflow-live.vercel.app",
     siteName: "EventFlow",
     title: "EventFlow | Modern Event Management Platform",
     description: "Create, discover, and manage unforgettable events.",
@@ -49,7 +55,7 @@ export const metadata: Metadata = {
     description: "Create, discover, and manage unforgettable events.",
     images: ["/og-image.png"],
   },
-  generator: "v0.app",
+  generator: "",
 };
 
 export const viewport: Viewport = {
