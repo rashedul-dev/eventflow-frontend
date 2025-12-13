@@ -34,11 +34,20 @@ export const metadata: Metadata = {
     siteName: "EventFlow",
     title: "EventFlow | Modern Event Management Platform",
     description: "Create, discover, and manage unforgettable events.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "EventFlow - Modern Event Management Platform",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "EventFlow | Modern Event Management Platform",
     description: "Create, discover, and manage unforgettable events.",
+    images: ["/og-image.png"],
   },
   generator: "v0.app",
 };
