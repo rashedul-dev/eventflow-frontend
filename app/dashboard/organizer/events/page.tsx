@@ -71,15 +71,8 @@ export default function OrganizerEventsPage() {
           <h1 className="text-3xl font-bold text-foreground">My Events</h1>
           <p className="text-foreground/60 mt-1">Manage and monitor all your events.</p>
         </div>
-        {events.length > 0 ? (
+        {events.length === 0 && (
           <Button asChild>
-            <Link href="/dashboard/organizer/create">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Event
-            </Link>
-          </Button>
-        ) : (
-          <Button asChild className="sr-only">
             <Link href="/dashboard/organizer/create">
               <Plus className="h-4 w-4 mr-2" />
               Create Event
