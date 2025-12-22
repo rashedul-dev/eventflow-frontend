@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Loader2, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, CheckCircle, AlertCircle, Shield } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { cn } from "@/lib/utils";
 import { loginSchema } from "@/lib/validations";
@@ -75,6 +75,35 @@ export function LoginForm() {
         setGeneralError("Too many login attempts. Please wait a few minutes and try again.");
       } else {
         setGeneralError(err.message || "Failed to sign in. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAdminLogin = async () => {
+    setGeneralError("");
+    setFieldErrors({});
+    setIsLoading(true);
+
+    const adminEmail = "admin@eventflow.com";
+    const adminPassword = "Admin@123456";
+
+    try {
+      await login(adminEmail, adminPassword);
+      router.push(redirect || "/dashboard");
+    } catch (err: any) {
+      if (err.errors && Array.isArray(err.errors)) {
+        const mappedErrors = mapApiErrorsToFields(err.errors);
+        setFieldErrors(mappedErrors);
+      } else if (err.statusCode === 401) {
+        setGeneralError("Invalid admin credentials. Please contact support.");
+      } else if (err.statusCode === 403) {
+        setGeneralError("Admin account is suspended. Please contact support.");
+      } else if (err.statusCode === 429) {
+        setGeneralError("Too many login attempts. Please wait a few minutes and try again.");
+      } else {
+        setGeneralError(err.message || "Failed to sign in as admin. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -188,16 +217,29 @@ export function LoginForm() {
         </div>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading || authLoading}>
-        {isLoading ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Signing in...
-          </>
-        ) : (
-          "Sign In"
-        )}
-      </Button>
+      <div className="space-y-3">
+        <Button type="submit" className="w-full" disabled={isLoading || authLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            "Sign In"
+          )}
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full bg-linear-to-r from-amber-500/10 to-orange-500/10 border-amber-500/20 hover:from-amber-500/20 hover:to-orange-500/20"
+          onClick={handleAdminLogin}
+          disabled={isLoading || authLoading}
+        >
+          <Shield className="w-4 h-4 mr-2 text-amber-600" />
+          <span className="text-amber-700 dark:text-amber-500">Login as Admin</span>
+        </Button>
+      </div>
 
       <p className="text-center text-sm text-muted-foreground">
         Didn't receive verification email?{" "}
