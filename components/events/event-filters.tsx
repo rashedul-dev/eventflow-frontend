@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -61,7 +61,20 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
 
   const hasActiveFilters = category !== "all" || date || isVirtual || searchTerm || location;
 
-  const applyFilters = () => {
+  // Apply filters immediately when category, date, or isVirtual changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (searchTerm) params.set("searchTerm", searchTerm);
+    if (location) params.set("city", location);
+    if (category && category !== "all") params.set("category", category);
+    if (date) params.set("startDateFrom", format(date, "yyyy-MM-dd"));
+    if (isVirtual) params.set("isVirtual", "true");
+
+    router.push(`/events?${params.toString()}`);
+  }, [category, date, isVirtual]);
+
+  const applySearchFilters = () => {
     const params = new URLSearchParams();
 
     if (searchTerm) params.set("searchTerm", searchTerm);
@@ -93,7 +106,7 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
             placeholder="Search events..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+            onKeyDown={(e) => e.key === "Enter" && applySearchFilters()}
             className="pl-10"
           />
         </div>
@@ -104,11 +117,11 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
             placeholder="City or location"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && applyFilters()}
+            onKeyDown={(e) => e.key === "Enter" && applySearchFilters()}
             className="pl-10"
           />
         </div>
-        <Button className="gap-2" onClick={applyFilters}>
+        <Button className="gap-2" onClick={applySearchFilters}>
           <Search className="w-4 h-4" />
           Search
         </Button>
@@ -131,7 +144,7 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
         </Select>
 
         {/* Date */}
-        <Popover>
+        {/* <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -144,7 +157,7 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
           </PopoverContent>
-        </Popover>
+        </Popover> */}
 
         {/* More Filters (Mobile Sheet) */}
         <Sheet>
@@ -159,7 +172,7 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
             <SheetHeader>
               <SheetTitle>Filters</SheetTitle>
             </SheetHeader>
-            <div className="mt-6 space-y-6">
+            <div className="mt-6 space-y-6 px-4">
               <div className="space-y-4">
                 <Label>Event Type</Label>
                 <div className="space-y-3">
@@ -197,9 +210,6 @@ export function EventFilters({ onFilterChange }: EventFiltersProps) {
               </div>
 
               <div className="pt-4 border-t space-y-3">
-                <Button onClick={applyFilters} className="w-full">
-                  Apply Filters
-                </Button>
                 <Button onClick={clearFilters} variant="outline" className="w-full bg-transparent">
                   Clear All Filters
                 </Button>
