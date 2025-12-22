@@ -53,7 +53,7 @@ export function DateRangePicker({ value, onChange, className }: DateRangePickerP
   return (
     <div className={cn("flex flex-wrap gap-2", className)}>
       <Select value={value.period || "month"} onValueChange={handlePeriodChange}>
-        <SelectTrigger className="w-[180px] bg-secondary/30">
+        <SelectTrigger className="w-45 bg-secondary/30">
           <SelectValue placeholder="Select period" />
         </SelectTrigger>
         <SelectContent>
@@ -73,7 +73,7 @@ export function DateRangePicker({ value, onChange, className }: DateRangePickerP
             <Button
               variant="outline"
               className={cn(
-                "w-[300px] justify-start text-left font-normal bg-secondary/30",
+                "w-75 justify-start text-left font-normal bg-secondary/30",
                 !date && "text-muted-foreground"
               )}
             >
