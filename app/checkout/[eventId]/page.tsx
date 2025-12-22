@@ -23,6 +23,8 @@ import {
   Clock,
   Loader2,
   AlertTriangle,
+  Tag,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Event } from "@/lib/types";
@@ -57,6 +59,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ eventId: st
     orderNumber: string;
     tickets: any[];
   } | null>(null);
+
+  // Promo code state
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedPromoCode, setAppliedPromoCode] = useState<string | null>(null);
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   // Payment intent state
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -146,12 +155,17 @@ export default function CheckoutPage({ params }: { params: Promise<{ eventId: st
     }
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     if (!event?.ticketTypes) return 0;
     return selectedTickets.reduce((total, selection) => {
       const ticketType = event.ticketTypes!.find((t) => t.id === selection.ticketTypeId);
       return total + (ticketType?.price || 0) * selection.quantity;
     }, 0);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    return Math.max(0, subtotal - promoDiscount);
   };
 
   const validateAvailability = (): string | null => {
@@ -169,6 +183,83 @@ export default function CheckoutPage({ params }: { params: Promise<{ eventId: st
     return null;
   };
 
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoError("Please enter a promo code");
+      return;
+    }
+
+    setIsValidatingPromo(true);
+    setPromoError(null);
+
+    try {
+      const firstSelection = selectedTickets[0];
+      const subtotal = calculateSubtotal();
+
+      // Create a temporary payment intent to validate the promo code
+      const response = await paymentApi.createPaymentIntent({
+        eventId,
+        ticketTypeId: firstSelection.ticketTypeId,
+        quantity: firstSelection.quantity,
+        promoCode: promoCode.trim().toUpperCase(),
+        billingEmail: user?.email || "",
+        billingName: user?.firstName ? `${user.firstName} ${user.lastName}` : "",
+        attendees: selectedTickets.map((sel) => ({
+          name: user?.firstName ? `${user.firstName} ${user.lastName}` : "Attendee",
+          email: user?.email || "",
+        })),
+      });
+
+      if (!isMountedRef.current) return;
+
+      if (response.data && response.data.breakdown) {
+        const discount = response.data.breakdown.discount || 0;
+
+        if (discount > 0) {
+          setAppliedPromoCode(promoCode.trim().toUpperCase());
+          setPromoDiscount(discount);
+          setPromoError(null);
+
+          toast({
+            title: "Promo Code Applied!",
+            description: `You saved $${discount.toFixed(2)}`,
+          });
+        } else {
+          setPromoError("This promo code is not valid or has expired");
+        }
+      }
+    } catch (err: any) {
+      if (err.code === "REQUEST_CANCELLED") return;
+
+      if (!isMountedRef.current) return;
+
+      const parsed = handleError(err);
+      setPromoError(parsed.userMessage || "Invalid promo code");
+
+      toast({
+        title: "Invalid Promo Code",
+        description: parsed.userMessage || "This promo code cannot be applied",
+        variant: "destructive",
+      });
+    } finally {
+      if (isMountedRef.current) {
+        setIsValidatingPromo(false);
+      }
+    }
+  };
+
+  const handleRemovePromoCode = () => {
+    setPromoCode("");
+    setAppliedPromoCode(null);
+    setPromoDiscount(0);
+    setPromoError(null);
+
+    toast({
+      title: "Promo Code Removed",
+      description: "The discount has been removed from your order",
+    });
+  };
+
   const handleContinueToPayment = async () => {
     const validationError = validateAvailability();
     if (validationError) {
@@ -184,14 +275,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ eventId: st
     setIsCreatingIntent(true);
 
     try {
-      // For now, we'll use the first selected ticket type
-      // In a real implementation, you might need to handle multiple ticket types differently
       const firstSelection = selectedTickets[0];
 
       const response = await paymentApi.createPaymentIntent({
         eventId,
         ticketTypeId: firstSelection.ticketTypeId,
         quantity: firstSelection.quantity,
+        promoCode: appliedPromoCode || undefined,
         billingEmail: user?.email || "",
         billingName: user?.firstName ? `${user.firstName} ${user.lastName}` : "",
         attendees: selectedTickets.map((sel) => ({
@@ -220,7 +310,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ eventId: st
 
       const parsed = handleError(err);
 
-      // Display field-specific errors if available
       if (parsed.fieldErrors && Object.keys(parsed.fieldErrors).length > 0) {
         const fieldErrors = Object.entries(parsed.fieldErrors)
           .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
@@ -274,6 +363,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ eventId: st
       eventId,
       tickets: selectedTickets,
       attendees: buildAttendeesData(),
+      promoCode: appliedPromoCode || undefined,
     });
 
     if (!isMountedRef.current) return;
@@ -459,6 +549,67 @@ export default function CheckoutPage({ params }: { params: Promise<{ eventId: st
                     initialSelection={selectedTickets}
                     onSelectionChange={setSelectedTickets}
                   />
+
+                  {/* Promo Code Section */}
+                  <div className="pt-6 border-t border-secondary">
+                    <div className="flex gap-1">
+                      <p className="text-sm font-medium text-foreground mb-3">Have a promo code?</p>
+                      <span className="text-sm font-light text-primary/50"> EARLY2026, TECHSUMMIT50</span>
+                    </div>
+
+                    {appliedPromoCode ? (
+                      <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10 border border-primary/20">
+                        <div className="flex items-center gap-2">
+                          <Tag className="h-4 w-4 text-primary" />
+                          <div>
+                            <p className="text-sm font-medium text-primary">{appliedPromoCode}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Discount applied: ${promoDiscount.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleRemovePromoCode}
+                          className="p-1 rounded-full hover:bg-primary/20 transition-colors"
+                        >
+                          <X className="h-4 w-4 text-primary" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Enter promo code"
+                            value={promoCode}
+                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                            onKeyDown={(e) => e.key === "Enter" && handleApplyPromoCode()}
+                            className="flex-1 px-4 py-2 rounded-lg bg-secondary border border-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                            disabled={isValidatingPromo || selectedTickets.length === 0}
+                          />
+                          <button
+                            onClick={handleApplyPromoCode}
+                            disabled={isValidatingPromo || !promoCode.trim() || selectedTickets.length === 0}
+                            className={cn(
+                              "px-6 py-2 rounded-lg font-medium transition-all",
+                              isValidatingPromo || !promoCode.trim() || selectedTickets.length === 0
+                                ? "bg-secondary text-muted-foreground cursor-not-allowed"
+                                : "bg-primary text-black hover:bg-primary/90"
+                            )}
+                          >
+                            {isValidatingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                          </button>
+                        </div>
+                        {promoError && (
+                          <p className="text-xs text-destructive flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            {promoError}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={handleContinueToPayment}
                     disabled={selectedTickets.length === 0 || isCreatingIntent}
@@ -559,6 +710,23 @@ export default function CheckoutPage({ params }: { params: Promise<{ eventId: st
               ) : (
                 <p className="text-sm text-muted-foreground pb-4 mb-4 border-b border-secondary">No tickets selected</p>
               )}
+
+              {/* Pricing Breakdown */}
+              <div className="space-y-2 pb-4 mb-4 border-b border-secondary">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-foreground">${calculateSubtotal().toFixed(2)}</span>
+                </div>
+                {promoDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-primary flex items-center gap-1">
+                      <Tag className="h-3 w-3" />
+                      Discount ({appliedPromoCode})
+                    </span>
+                    <span className="text-primary">-${promoDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
 
               {/* Total */}
               <div className="flex justify-between items-center">
